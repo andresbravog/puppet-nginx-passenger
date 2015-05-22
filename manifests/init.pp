@@ -3,8 +3,10 @@
 # This module installs Nginx and its default configuration using rvm as the provider.
 #
 # Parameters:
-#   $passenger_path
+#   $passenger_root
 #      Path to the passenger gem
+#   $passenger_ruby
+#      Path to the passenger ruby
 #   $logdir
 #      Nginx's log directory.
 #   $installdir
@@ -15,10 +17,12 @@
 #
 # Sample Usage:  include nginx
 class nginx (
-  $logdir = '/var/log/nginx',
-  $installdir = '/opt/nginx',
-  $www    = '/var/www'
-  $passenger_path = '') {
+    $logdir = '/var/log/nginx',
+    $installdir = '/opt/nginx',
+    $www    = '/var/www',
+    $passenger_root = '',
+    $passenger_ruby = '',
+  ) {
 
     $options = "--auto --auto-download  --prefix=${installdir}"
     $passenger_deps = [ 'libcurl4-openssl-dev' ]
@@ -32,10 +36,11 @@ class nginx (
     }
 
     exec { 'nginx-install':
-      command => "/bin/bash -l -i -c \"${passenger_path}/bin/passenger-install-nginx-module ${options}\"",
+      command => "/bin/bash -l -i -c \"${passenger_root}/bin/passenger-install-nginx-module ${options}\"",
       group   => 'root',
       unless  => "/usr/bin/test -d ${installdir}",
-      require => [ Package[$dependencies_passenger] ];
+      timeout => 6000,
+      require => [ Package[$passenger_deps] ];
     }
 
     file { 'nginx-config':
