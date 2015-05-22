@@ -3,10 +3,8 @@
 # This module installs Nginx and its default configuration using rvm as the provider.
 #
 # Parameters:
-#   $ruby_version
-#       Ruby version to install.
-#   $passenger_version
-#      Passenger version to install.
+#   $passenger_path
+#      Path to the passenger gem
 #   $logdir
 #      Nginx's log directory.
 #   $installdir
@@ -15,34 +13,17 @@
 #      Base directory for
 # Actions:
 #
-# Requires:
-#    puppet-rvm
-#
 # Sample Usage:  include nginx
 class nginx (
-  $ruby_version = 'ruby-1.9.3-p125',
-  $passenger_version = '3.0.12',
   $logdir = '/var/log/nginx',
   $installdir = '/opt/nginx',
-  $www    = '/var/www' ) {
+  $www    = '/var/www'
+  $passenger_path = '') {
 
     $options = "--auto --auto-download  --prefix=${installdir}"
     $passenger_deps = [ 'libcurl4-openssl-dev' ]
 
-    include rvm
-
     package { $passenger_deps: ensure => present }
-
-    rvm_system_ruby {
-      $ruby_version:
-        ensure      => 'present',
-        default_use => true;
-    }
-
-    rvm_gem {
-      "${ruby_version}/passenger":
-        ensure => $passenger_version,
-    }
 
     exec { 'create container':
       command => "/bin/mkdir ${www} && /bin/chown www-data:www-data ${www}",
@@ -51,10 +32,10 @@ class nginx (
     }
 
     exec { 'nginx-install':
-      command => "/bin/bash -l -i -c \"/usr/local/rvm/gems/${ruby_version}/bin/passenger-install-nginx-module ${options}\"",
+      command => "/bin/bash -l -i -c \"${passenger_path}/bin/passenger-install-nginx-module ${options}\"",
       group   => 'root',
       unless  => "/usr/bin/test -d ${installdir}",
-      require => [ Package[$dependencies_passenger], Rvm_system_ruby[$ruby_version], Rvm_gem["${ruby_version}/passenger"]];
+      require => [ Package[$dependencies_passenger] ];
     }
 
     file { 'nginx-config':
